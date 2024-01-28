@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return 'Hello World!'
+    return 'Test!'
 
 @app.route('/poll', methods=['GET'])
 def poll_frame():
@@ -15,8 +15,8 @@ def poll_frame():
     <html>
     <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="http://example.com/poll_image.png" />
-        <meta property="fc:frame:button:1" content="Option 1" />
+        <meta property="fc:frame:image" content="https://www.freecodecamp.org/news/content/images/size/w2000/2020/03/open-graph.jpg" />
+        <meta property="fc:frame:button:1" content="Test 1" />
         <meta property="fc:frame:button:2" content="Option 2" />
         <!-- Add more buttons as needed -->
     </head>
