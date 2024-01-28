@@ -15,13 +15,12 @@ def poll_frame():
     <html>
     <head>
         <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content="https://www.freecodecamp.org/news/content/images/size/w2000/2020/03/open-graph.jpg" />
-        <meta property="fc:frame:button:1" content="Test 1" />
-        <meta property="fc:frame:button:2" content="Option 2" />
-        <!-- Add more buttons as needed -->
+        <meta property="fc:frame:image" content="https://generative-frame.vercel.app/api/image" />
+        <meta property="fc:frame:button:1" content="Green" />
+        <meta property="fc:frame:button:2" content="Blue" />
     </head>
     <body>
-        Poll Frame Content
+        Testing testing
     </body>
     </html>
     '''
@@ -39,7 +38,7 @@ def process_poll():
 
     if response.status_code == 200:
         # Generate updated results image (placeholder logic)
-        new_image_url = 'http://example.com/updated_poll_image.png'
+        new_image_url = 'https://generative-frame.vercel.app/api/image'
 
         # Return the updated frame with new image
         updated_html_content = '''
