@@ -1,2 +1,5 @@
 .vercel
 .DS_STORE
+.env
+image_generator.py
+test.py
