@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
+import json
 from openai import OpenAI
 from PIL import Image
 from PIL import ImageDraw
@@ -21,21 +22,34 @@ cloudinary.config(
 client = OpenAI()
 
 ASSISTANT_CONTENT = """ 
-You are a friendly assistant playing a game with a user. You are playing 20 questions and are the QUESTIONER.
-The premise of the game is simple: One person, called the “answerer,” thinks of an object. 
-The other player — the “questioner” — asks up to 20 yes-or-no questions in order to determine what object the answerer is thinking about. 
-If the questioner guesses correctly within 20 questions, they win. 
-If the questioner does not correctly guess the answer, then the answerer wins. 
-The fewer questions asked, the more the questioner’s “win” is worth.
+You are a friendly travel agent that helps users find their next destination. 
+Your job is to ask a client a few questions before suggesting a place for them to visit.
+You must generate the question along with two short answers. Based on the client's answer,
+determine a new question to ask. You must respond in correct JSON.
 
-Begin by asking your first question: 1. Is it alive?
-Keep your questions short.
-After each response, you may try guessing the object with "MY GUESS: " followed by your guess.
+For example, assuming the client selects Answer1, the generated result would then be:
+{
+    [
+        "question":"Do you like the beach?",
+        "answer1":"I love the beach! ☀️",
+        "answer2":"No, it's hot for me... 🥵"
+    ],
+    [
+        "question":"Are you into surfing?",
+        "answer1":"Not really! I'd rather relax.",
+        "answer2":"I'm a shredder!"
+    ],
+}
+
+After a few more questions and answers, the suggested country is: Portugal, output as follows:
+{
+    "suggested_country": "Portugal"
+}
 """
 
 message=[
-    {"role": "assistant", "content": ASSISTANT_CONTENT}, 
-    {"role": "user", "content": "I'm excited to play! Ok, I'm thinking of an object."}
+    {"role": "system", "content": ASSISTANT_CONTENT}, 
+    {"role": "user", "content": "Let's get started!"}
 ]
 
 temperature=0.8
@@ -43,13 +57,22 @@ max_tokens=256
 frequency_penalty=0.0
 
 
-def generateImage(output_text):
-    bg_img = Image.open('public/image-asset.jpg')
+def generateImage(input_prompt, output_text):
+
+    response = client.images.generate(
+        model="dall-e-3",
+        prompt=input_prompt,
+        n=1,
+        size="1024x1024"
+    )
+
+
+    bg_img = Image.open(requests.get(response.data[0].url, stream=True).raw)
     # Call draw Method to add 2D graphics in an image
     I1 = ImageDraw.Draw(bg_img)
     
     # Add Text to an image
-    I1.text((40, 100), output_text, font=myFont, fill=(255, 255, 255))
+    I1.text((40, 100), output_text, font=myFont, fill=(0, 0, 0))
     
     myuuid = uuid.uuid4()
 
@@ -88,6 +111,37 @@ def getLlmResponse(input):
     )
     return text
 
+def getFirstReponse():
+    response = client.chat.completions.create(
+        model="gpt-4-0125-preview",
+        messages = message,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        frequency_penalty=frequency_penalty
+    )
+
+    text = response.choices[0].message.content
+
+    message.append({
+        "role": "assistant",
+        "content": text
+        } 
+    )
+    return text
+
+def parseAnswer(answer):
+    json_answer = json.loads(answer)
+    suggested_country = ""
+    if "suggested_country" in json_answer.keys():
+        suggested_country = json_answer["suggested_country"]
+        return {"continue": False, "response": json_answer}
+    else:
+        return {
+            "continue": True,
+            "response": json_answer
+            }
+
+
 
 def getNewImage(text):
     image_id = generateImage(text)
@@ -99,28 +153,37 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
+    response = getFirstReponse()
+    parsed = parseAnswer(response)
+    json_answers = parsed["response"]
+    question = json_answers["question"]
+    answer1 = json_answers["answer1"]
+    answer2 = json_answers["answer2"]
+
+    img_url = getNewImage(f"art combining {answer1} and {answer2}", question)
+
     html_content = '''<!DOCTYPE html>
 <html>
 <head>
     <meta property="og:title" content="20 Questions"/>
     <meta name="fc:frame:post_url" content="https://frame-hack.vercel.app/api"/>
-    <meta property="og:image" content="https://res.cloudinary.com/dcgeg66gy/image/upload/v1706472695/wonh3histo05gxyu1ba8.jpg" />
+    <meta property="og:image" content="{0}" />
     <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="https://res.cloudinary.com/dcgeg66gy/image/upload/v1706472695/wonh3histo05gxyu1ba8.jpg" />
-    <meta property="fc:frame:button:1" content="Yes" />
-    <meta property="fc:frame:button:2" content="No" />
+    <meta property="fc:frame:image" content="{0}" />
+    <meta property="fc:frame:button:1" content={1} />
+    <meta property="fc:frame:button:2" content={2} />
 </head>
 <body>
 20 Questions
 </body>
 </html>
-'''
+'''.format(img_url, answer1, answer2)
     return html_content
 
 @app.route('/api', methods=['POST'])
 def process():
     response = request.json.get('untrustedData')
-    
+
     btn_index = response["buttonIndex"]
     if btn_index == 1:
         user_response = "Yes"
