@@ -109,6 +109,7 @@ def home():
     <meta property="fc:frame:image" content="https://res.cloudinary.com/dcgeg66gy/image/upload/v1706472695/wonh3histo05gxyu1ba8.jpg" />
     <meta property="fc:frame:button:1" content="Yes" />
     <meta property="fc:frame:button:2" content="No" />
+      <meta property="of:accepts:xmtp" content="2024-02-01" />
 </head>
 <body>
 20 Questions

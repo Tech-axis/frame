@@ -6,4 +6,3 @@ Each turn, the question generates a JPG that is rendered in the frame along with
 
 The user's answer is passed to a prompt and then the following question is generated.
 
-Kudos to wbnns for the useful wbnns/flaskframe repo!
